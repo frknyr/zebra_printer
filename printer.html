@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <title>KYS → Web → Zebra | Toplu Baskı (Mock’lu)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{--gap:12px}
+    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;max-width:1000px;margin:24px auto;padding:0 12px}
+    h1{font-size:22px;margin-bottom:8px}
+    .row{display:flex;gap:var(--gap);align-items:center;flex-wrap:wrap;margin:8px 0}
+    .col{display:flex;flex-direction:column;gap:8px}
+    fieldset{border:1px solid #ddd;border-radius:10px;padding:12px}
+    label{font-weight:600}
+    select,input[type=file],input[type=text],button,textarea{padding:8px;font-size:14px}
+    textarea{width:100%;min-height:180px;font-family:ui-monospace,Menlo,Consolas,monospace}
+    .log{background:#f6f6f6;border:1px solid #eee;border-radius:10px;padding:8px;height:200px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace}
+    .ok{color:#186a3b}.err{color:#922b21}.muted{color:#777}
+    table{border-collapse:collapse;width:100%;font-size:13px}
+    th,td{border:1px solid #eee;padding:6px}
+    th{background:#fafafa}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef;border:1px solid #dde}
+    .warn{background:#fff4e5;border-color:#ffe0b2}
+    .success{background:#e8f5e9;border-color:#c8e6c9}
+    .danger{background:#ffebee;border-color:#ffcdd2}
+  </style>
+  <script src="BrowserPrint-3.1.250.min.js"></script>
+</head>
+<body>
+  <h1>KYS → Web → Zebra | Toplu Baskı (Mock KYS ile geliştirme)</h1>
+  <p class="muted">USB ile bağlı Zebra ZD220T/GT800 için; KYS API henüz hazır değilken <b>mock</b> veriyle geliştirme yapar. API hazır olduğunda gerçek endpoint’i ayarlayıp aynı sayfayla devam edebilirsiniz.</p>
+
+  <fieldset>
+    <legend>1) Veri Kaynağı</legend>
+    <div class="row">
+      <label><input type="radio" name="source" value="mock" checked> Mock KYS (yerleşik örnek veriler)</label>
+      <label><input type="radio" name="source" value="api"> Gerçek API (hazır olunca)</label>
+      <label><input type="radio" name="source" value="csv"> CSV Yükle</label>
+    </div>
+    <div class="row" id="apiRow" style="display:none">
+      <label for="apiUrl">API URL:</label>
+      <input id="apiUrl" type="text" size="60" placeholder="https://kys.ornek.org/api/print-data?event_id=123" />
+      <button id="btnFetch">Verileri Getir</button>
+    </div>
+    <div class="row" id="csvRow" style="display:none">
+      <label for="csvFile">CSV:</label>
+      <input id="csvFile" type="file" accept=".csv" />
+    </div>
+    <div class="row">
+      <span class="pill warn">Beklenen alanlar: <code>name, org, role, qr_payload</code></span>
+      <button id="btnLoadMock">Mock Veriyi Yükle</button>
+      <button id="btnPreview">İlk 5 Satırı Önizle</button>
+    </div>
+    <div id="preview"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>2) ZPL Şablon</legend>
+    <div class="col">
+      <textarea id="zpl">^XA
+^PW800
+^CI28
+^LH20,20
+^A0N,40,40
+^FO20,20^FD${name}^FS
+^A0N,28,28
+^FO20,70^FD${org} - ${role}^FS
+^FO20,120^BQ,2,10
+^FDQA,${qr_payload}^FS
+^XZ</textarea>
+      <small class="muted">Notlar: <code>^CI28</code> UTF-8, <code>^PW</code> genişlik, <code>^FOx,y</code> konum, <code>^A0N,h,w</code> font/ebat, <code>^BQ</code> QR.</small>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>3) Yazıcı Seçimi</legend>
+    <div class="row">
+      <button id="btnFind">Yazıcıları Bul</button>
+      <select id="printers" style="min-width:260px"></select>
+      <button id="btnTest">Test Baskı</button>
+      <span class="muted">(Browser Print Agent kurulu ve açık olmalı)</span>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>4) Toplu Baskı</legend>
+    <div class="row">
+      <label>Gecikme (ms): <input id="delayMs" type="text" value="100" size="6"></label>
+      <button id="btnPrint">Toplu Bas</button>
+      <button id="btnStop">Durdur</button>
+      <progress id="prog" value="0" max="100" style="width:220px"></progress>
+      <span id="status" class="muted"></span>
+    </div>
+    <div class="row">
+      <div class="col" style="flex:1">
+        <label>Günlük</label>
+        <div id="log" class="log"></div>
+      </div>
+    </div>
+  </fieldset>
+
+<script>
+// ========================
+//  MOCK VERİ ve YARDIMCILAR
+// ========================
+const MOCK_DATA = [
+  { name: "Ayşe Yılmaz", org: "T3", role: "Ziyaretçi", qr_payload: "ATT-1001" },
+  { name: "Mehmet Demir", org: "T3", role: "Görevli",   qr_payload: "ATT-1002" },
+  { name: "Elif Kaya",   org: "T3", role: "Konuk",     qr_payload: "ATT-1003" },
+  { name: "Ahmet Şen",   org: "T3", role: "Ziyaretçi", qr_payload: "ATT-1004" },
+  { name: "Cemre Ak",    org: "T3", role: "Ziyaretçi", qr_payload: "ATT-1005" },
+  { name: "Deniz Aslan", org: "T3", role: "Konuk",     qr_payload: "ATT-1006" },
+  { name: "Zeynep Ulu",  org: "T3", role: "Görevli",   qr_payload: "ATT-1007" },
+];
+
+let DATA_ROWS = []; // aktif veri kümesi
+let SELECTED_PRINTER = null;
+let STOP_FLAG = false;
+
+function log(msg, cls=""){
+  const el = document.getElementById('log');
+  const d = document.createElement('div');
+  if(cls) d.className = cls;
+  d.textContent = msg;
+  el.appendChild(d); el.scrollTop = el.scrollHeight;
+}
+function setStatus(t){ document.getElementById('status').textContent = t; }
+function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+function csvParse(text){
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+  if(lines.length < 2) return {header:[], data:[]};
+  const header = lines[0].split(',').map(s=>s.trim());
+  const data = lines.slice(1).map(line => {
+    const cols = line.split(',').map(s=>s.trim());
+    const o = {}; header.forEach((h,i)=>o[h]=cols[i]??""); return o;
+  });
+  return {header, data};
+}
+
+function fillZPL(tpl, rec){
+  return tpl.replace(/\$\{(\w+)\}/g, (_,k)=> rec[k] ?? "");
+}
+
+function renderPreview(rows){
+  const preview = document.getElementById('preview');
+  if(!rows || !rows.length){ preview.innerHTML = '<p class="muted">Önizleme yok.</p>'; return; }
+  const first = rows.slice(0,5);
+  const cols = Object.keys(first[0]);
+  let html = '<table><thead><tr>' + cols.map(c=>`<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+  html += first.map(r=> '<tr>' + cols.map(c=>`<td>${(r[c]??'')}</td>`).join('') + '</tr>').join('');
+  html += '</tbody></table>';
+  preview.innerHTML = html;
+}
+
+// ========================
+//  KAYNAK SEÇİMİ UI
+// ========================
+const sourceRadios = document.querySelectorAll('input[name="source"]');
+sourceRadios.forEach(r=> r.addEventListener('change', ()=>{
+  const v = document.querySelector('input[name="source"]:checked').value;
+  document.getElementById('apiRow').style.display = (v==='api')? 'flex':'none';
+  document.getElementById('csvRow').style.display = (v==='csv')? 'flex':'none';
+}));
+
+document.getElementById('btnLoadMock').addEventListener('click', ()=>{
+  DATA_ROWS = [...MOCK_DATA];
+  renderPreview(DATA_ROWS);
+  log(`Mock veri yüklendi: ${DATA_ROWS.length} satır`, 'ok');
+});
+
+document.getElementById('btnFetch').addEventListener('click', async()=>{
+  const url = document.getElementById('apiUrl').value.trim();
+  if(!url){ alert('API URL girin.'); return; }
+  try{
+    const res = await fetch(url);
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if(!Array.isArray(data)) throw new Error('JSON dizi bekleniyordu.');
+    DATA_ROWS = data;
+    renderPreview(DATA_ROWS);
+    log(`API verisi alındı: ${DATA_ROWS.length} satır`, 'ok');
+  }catch(e){ log('API hatası: '+e.message, 'err'); }
+});
+
+// CSV yükleme
+const csvFile = document.getElementById('csvFile');
+csvFile.addEventListener('change', async (e)=>{
+  const f = e.target.files?.[0]; if(!f) return;
+  const text = await f.text();
+  const {header, data} = csvParse(text);
+  if(header.length===0){ alert('CSV başlık satırı bulunamadı. (name,org,role,qr_payload)'); return; }
+  DATA_ROWS = data;
+  renderPreview(DATA_ROWS);
+  log(`CSV yüklendi: ${DATA_ROWS.length} satır`, 'ok');
+});
+
+document.getElementById('btnPreview').addEventListener('click', ()=>{
+  if(!DATA_ROWS.length){ alert('Önce veri yükleyin.'); return; }
+  renderPreview(DATA_ROWS);
+  log('İlk 5 satır önizleme gösterildi.');
+});
+
+// ========================
+//  BROWSER PRINT: YAZICI
+// ========================
+const printersSel = document.getElementById('printers');
+
+document.getElementById('btnFind').addEventListener('click', ()=>{
+  if(!window.BrowserPrint || !BrowserPrint.getLocalDevices){
+    alert('BrowserPrint JS yüklenemedi. Agent kurulu mu?');
+    return;
+  }
+  BrowserPrint.getLocalDevices((devices)=>{
+    const printers = devices.filter(d=> d.deviceType === 'printer');
+    printersSel.innerHTML='';
+    printers.forEach(p=>{
+      const opt = document.createElement('option');
+      opt.value = p.uid || p.name; opt.textContent = p.name || p.uid || 'Yazıcı';
+      opt.dataset.raw = JSON.stringify(p); printersSel.appendChild(opt);
+    });
+    if(printers.length){
+      SELECTED_PRINTER = printers[0];
+      log(`Bulunan yazıcı: ${SELECTED_PRINTER.name || SELECTED_PRINTER.uid}`, 'ok');
+    }else{
+      log('Yazıcı bulunamadı. Agent açık mı? USB bağlı mı?', 'err');
+    }
+  }, (err)=>{ log('Yazıcı arama hatası: '+err, 'err'); }, 'printer');
+});
+
+printersSel.addEventListener('change', (e)=>{
+  const opt = e.target.selectedOptions[0];
+  if(opt?.dataset.raw){ SELECTED_PRINTER = JSON.parse(opt.dataset.raw); log(`Seçilen yazıcı: ${SELECTED_PRINTER.name || SELECTED_PRINTER.uid}`, 'ok'); }
+});
+
+document.getElementById('btnTest').addEventListener('click', ()=>{
+  if(!SELECTED_PRINTER){ alert('Önce yazıcı seç'); return; }
+  const zpl = '^XA^CI28^FO50,50^A0N,40,40^FDTest Baskı^FS^XZ';
+  SELECTED_PRINTER.send(zpl, ()=> log('Test baskı gönderildi.','ok'), (e)=> log('Test hata: '+e,'err'));
+});
+
+// ========================
+//  TOPLU BASKI
+// ========================
+const btnPrint = document.getElementById('btnPrint');
+const btnStop  = document.getElementById('btnStop');
+const progEl   = document.getElementById('prog');
+
+btnStop.addEventListener('click', ()=>{ STOP_FLAG = true; log('Durdurma istendi.','warn'); });
+
+btnPrint.addEventListener('click', async()=>{
+  if(!SELECTED_PRINTER){ alert('Önce yazıcı seç'); return; }
+  if(!DATA_ROWS.length){ alert('Önce veri yükle'); return; }
+
+  STOP_FLAG = false;
+  const tpl = document.getElementById('zpl').value;
+  const delay = parseInt(document.getElementById('delayMs').value||'100',10);
+  let ok=0, fail=0;
+  progEl.value = 0; progEl.max = DATA_ROWS.length;
+  setStatus(`Baskı başladı (${DATA_ROWS.length} adet)`);
+
+  for(let i=0;i<DATA_ROWS.length;i++){
+    if(STOP_FLAG){ setStatus(`Durduruldu. Başarılı: ${ok}, Hata: ${fail}`); break; }
+    const rec = DATA_ROWS[i];
+    const zpl = fillZPL(tpl, rec);
+    await new Promise(resolve => {
+      SELECTED_PRINTER.send(zpl, ()=>{ ok++; log(`OK ${i+1}/${DATA_ROWS.length} → ${rec.name||''}`,'ok'); resolve(); }, (e)=>{ fail++; log(`HATA ${i+1}/${DATA_ROWS.length} → ${e}`,'err'); resolve(); });
+    });
+    progEl.value = i+1;
+    await sleep(delay);
+  }
+  if(!STOP_FLAG) setStatus(`Bitti. Başarılı: ${ok}, Hata: ${fail}`);
+});
+</script>
+</body>
+</html>
