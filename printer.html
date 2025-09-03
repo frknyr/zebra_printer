@@ -27,7 +27,7 @@
     .success{background:#e8f5e9;border-color:#c8e6c9}
     .danger{background:#ffebee;border-color:#ffcdd2}
     #designArea{position:relative;width:400px;height:250px;border:1px solid #ddd;background:#fff;}
-    #designArea .drag{position:absolute;padding:2px 4px;border:1px dashed #007bff;background:#eef;cursor:move;font-size:12px;}
+    #designArea .drag{position:absolute;padding:2px 4px;border:1px dashed #007bff;background:#eef;cursor:move;font-size:12px;resize:both;overflow:hidden;min-width:20px;min-height:20px;}
     #designArea .drag.qr{width:60px;height:60px;display:flex;align-items:center;justify-content:center;}
   </style>
   <script src="BrowserPrint-3.1.250.min.js"></script>
@@ -72,14 +72,20 @@
         <div class="col">
           <label>Ad Soyad X: <input type="number" id="pos-name-x" size="4"></label>
           <label>Y: <input type="number" id="pos-name-y" size="4"></label>
+          <label>W: <input type="number" id="pos-name-w" size="4"></label>
+          <label>H: <input type="number" id="pos-name-h" size="4"></label>
         </div>
         <div class="col">
           <label>Ünvan X: <input type="number" id="pos-title-x" size="4"></label>
           <label>Y: <input type="number" id="pos-title-y" size="4"></label>
+          <label>W: <input type="number" id="pos-title-w" size="4"></label>
+          <label>H: <input type="number" id="pos-title-h" size="4"></label>
         </div>
         <div class="col">
           <label>QR X: <input type="number" id="pos-qr_payload-x" size="4"></label>
           <label>Y: <input type="number" id="pos-qr_payload-y" size="4"></label>
+          <label>W: <input type="number" id="pos-qr_payload-w" size="4"></label>
+          <label>H: <input type="number" id="pos-qr_payload-h" size="4"></label>
         </div>
       </div>
       <textarea id="zpl">^XA

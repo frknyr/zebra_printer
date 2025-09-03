@@ -57,31 +57,47 @@ if(designArea){
   FIELDS.forEach(f=>{
     posInputs[f] = {
       x: document.getElementById(`pos-${f}-x`),
-      y: document.getElementById(`pos-${f}-y`)
+      y: document.getElementById(`pos-${f}-y`),
+      w: document.getElementById(`pos-${f}-w`),
+      h: document.getElementById(`pos-${f}-h`)
+
     };
-    ['x','y'].forEach(axis=>{
+    ['x','y','w','h'].forEach(axis=>{
       posInputs[f][axis].addEventListener('input', ()=>{
         const val = parseInt(posInputs[f][axis].value)||0;
         const el = designArea.querySelector(`.drag[data-field="${f}"]`);
         if(axis==='x') el.style.left = (val / SCALE) + 'px';
-        else el.style.top = (val / SCALE) + 'px';
+        else if(axis==='y') el.style.top = (val / SCALE) + 'px';
+        else if(axis==='w'){
+          el.style.width = (val / SCALE) + 'px';
+          if(f==='qr_payload') el.style.height = (val / SCALE) + 'px';
+        }else if(axis==='h'){
+          el.style.height = (val / SCALE) + 'px';
+          if(f==='qr_payload') el.style.width = (val / SCALE) + 'px';
+          else el.style.fontSize = (val / SCALE) + 'px';
+        }
         updateZplFromDesign();
       });
     });
   });
-  const defaults = { name:{x:20,y:20}, title:{x:20,y:70}, qr_payload:{x:20,y:120} };
+  const defaults = { name:{x:20,y:20,w:200,h:40}, title:{x:20,y:70,w:200,h:28}, qr_payload:{x:20,y:120,w:60,h:60} };
   Object.keys(defaults).forEach(k=>{
     const el = designArea.querySelector(`.drag[data-field="${k}"]`);
     const p = defaults[k];
     el.style.left = (p.x / SCALE) + 'px';
     el.style.top  = (p.y / SCALE) + 'px';
+    el.style.width  = (p.w / SCALE) + 'px';
+    el.style.height = (p.h / SCALE) + 'px';
+    if(k!=='qr_payload') el.style.fontSize = (p.h / SCALE) + 'px';
     makeDraggable(el);
+    new ResizeObserver(()=>{ updateZplFromDesign(); }).observe(el);
   });
   updateZplFromDesign();
 }
 
 function makeDraggable(el){
   el.addEventListener('mousedown', e=>{
+    if(e.offsetX > el.clientWidth - 10 && e.offsetY > el.clientHeight - 10) return;
     e.preventDefault();
     const startRect = designArea.getBoundingClientRect();
     const shiftX = e.clientX - startRect.left - el.offsetLeft;
@@ -109,8 +125,12 @@ function updateZplFromDesign(){
   if(!designArea) return;
   const getPos = field=>{
     const el = designArea.querySelector(`.drag[data-field="${field}"]`);
-    return { x: Math.round((parseInt(el.style.left)||0)*SCALE),
-             y: Math.round((parseInt(el.style.top)||0)*SCALE) };
+    return {
+      x: Math.round((parseInt(el.style.left)||0)*SCALE),
+      y: Math.round((parseInt(el.style.top)||0)*SCALE),
+      w: Math.round(el.offsetWidth*SCALE),
+      h: Math.round(el.offsetHeight*SCALE)
+    };
   };
   const namePos = getPos('name');
   const titlePos = getPos('title');
@@ -119,11 +139,11 @@ function updateZplFromDesign(){
 ^PW800
 ^CI28
 ^LH0,0
-^A0N,40,40
+^A0N,${namePos.h},${namePos.h}
 ^FO${namePos.x},${namePos.y}^FD\${name}^FS
-^A0N,28,28
+^A0N,${titlePos.h},${titlePos.h}
 ^FO${titlePos.x},${titlePos.y}^FD\${title}^FS
-^FO${qrPos.x},${qrPos.y}^BQ,2,10
+^FO${qrPos.x},${qrPos.y}^BQ,2,${Math.round(qrPos.w/6)}
 ^FDQA,\${qr_payload}^FS
 ^XZ`;
   document.getElementById('zpl').value = zpl;
@@ -135,8 +155,12 @@ function updateInputsFromDesign(){
     const el = designArea.querySelector(`.drag[data-field="${f}"]`);
     const x = Math.round((parseInt(el.style.left)||0)*SCALE);
     const y = Math.round((parseInt(el.style.top)||0)*SCALE);
+    const w = Math.round(el.offsetWidth*SCALE);
+    const h = Math.round(el.offsetHeight*SCALE);
     posInputs[f].x.value = x;
     posInputs[f].y.value = y;
+    posInputs[f].w.value = w;
+    posInputs[f].h.value = h;
   });
 }
 
