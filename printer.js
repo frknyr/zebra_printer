@@ -52,6 +52,71 @@ function renderPreview(rows){
 }
 
 // ========================
+//  TASARIM ALANI
+// ========================
+const SCALE = 2;
+const designArea = document.getElementById('designArea');
+if(designArea){
+  const defaults = { name:{x:20,y:20}, title:{x:20,y:70}, qr_payload:{x:20,y:120} };
+  Object.keys(defaults).forEach(k=>{
+    const el = designArea.querySelector(`.drag[data-field="${k}"]`);
+    const p = defaults[k];
+    el.style.left = (p.x / SCALE) + 'px';
+    el.style.top  = (p.y / SCALE) + 'px';
+    makeDraggable(el);
+  });
+  updateZplFromDesign();
+}
+
+function makeDraggable(el){
+  el.addEventListener('mousedown', e=>{
+    e.preventDefault();
+    const rect = designArea.getBoundingClientRect();
+    const shiftX = e.clientX - el.offsetLeft;
+    const shiftY = e.clientY - el.offsetTop;
+    function onMove(ev){
+      let x = ev.clientX - rect.left - shiftX;
+      let y = ev.clientY - rect.top - shiftY;
+      x = Math.max(0, Math.min(x, designArea.clientWidth - el.offsetWidth));
+      y = Math.max(0, Math.min(y, designArea.clientHeight - el.offsetHeight));
+      el.style.left = x + 'px';
+      el.style.top  = y + 'px';
+    }
+    function onUp(){
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      updateZplFromDesign();
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+function updateZplFromDesign(){
+  if(!designArea) return;
+  const getPos = field=>{
+    const el = designArea.querySelector(`.drag[data-field="${field}"]`);
+    return { x: Math.round((parseInt(el.style.left)||0)*SCALE),
+             y: Math.round((parseInt(el.style.top)||0)*SCALE) };
+  };
+  const namePos = getPos('name');
+  const titlePos = getPos('title');
+  const qrPos   = getPos('qr_payload');
+  const zpl = `^XA
+^PW800
+^CI28
+^LH0,0
+^A0N,40,40
+^FO${namePos.x},${namePos.y}^FD\${name}^FS
+^A0N,28,28
+^FO${titlePos.x},${titlePos.y}^FD\${title}^FS
+^FO${qrPos.x},${qrPos.y}^BQ,2,10
+^FDQA,\${qr_payload}^FS
+^XZ`;
+  document.getElementById('zpl').value = zpl;
+}
+
+// ========================
 //  KAYNAK SEÇİMİ UI
 // ========================
 const sourceRadios = document.querySelectorAll('input[name="source"]');

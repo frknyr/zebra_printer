@@ -26,6 +26,9 @@
     .warn{background:#fff4e5;border-color:#ffe0b2}
     .success{background:#e8f5e9;border-color:#c8e6c9}
     .danger{background:#ffebee;border-color:#ffcdd2}
+    #designArea{position:relative;width:400px;height:250px;border:1px solid #ddd;background:#fff;}
+    #designArea .drag{position:absolute;padding:2px 4px;border:1px dashed #007bff;background:#eef;cursor:move;font-size:12px;}
+    #designArea .drag.qr{width:60px;height:60px;display:flex;align-items:center;justify-content:center;}
   </style>
   <script src="BrowserPrint-3.1.250.min.js"></script>
 </head>
@@ -58,12 +61,17 @@
   </fieldset>
 
   <fieldset>
-    <legend>2) ZPL Şablon</legend>
+    <legend>2) Kart Tasarımı & ZPL</legend>
     <div class="col">
+      <div id="designArea">
+        <div class="drag" data-field="name">Ad Soyad</div>
+        <div class="drag" data-field="title">Ünvan</div>
+        <div class="drag qr" data-field="qr_payload">QR</div>
+      </div>
       <textarea id="zpl">^XA
 ^PW800
 ^CI28
-^LH20,20
+^LH0,0
 ^A0N,40,40
 ^FO20,20^FD${name}^FS
 ^A0N,28,28
@@ -71,9 +79,7 @@
 ^FO20,120^BQ,2,10
 ^FDQA,${qr_payload}^FS
 ^XZ</textarea>
-      <small class="muted">Notlar: <code>^CI28</code> UTF-8, <code>^PW</code> genişlik, <code>^FOx,y</code> konum, <code>^A0N,h,w</code> font/ebat, <code>^BQ</code> QR.</small>
-    </div>
-  </fieldset>
+      <small class="muted">Ögeleri sürükleyip konumlandırın. <code>^CI28</code> UTF-8, <code>^PW</code> genişlik, <code>^FOx,y</code> konum, <code>^A0N,h,w</code> font/ebat, <code>^BQ</code> QR.</small>
 
   <fieldset>
     <legend>3) Yazıcı Seçimi</legend>
