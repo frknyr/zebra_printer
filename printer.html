@@ -6,13 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root{--gap:12px}
-    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;max-width:1000px;margin:24px auto;padding:0 12px}
+    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;max-width:1000px;margin:24px auto;padding:0 12px;line-height:1.5;background:#fafafa}
     h1{font-size:22px;margin-bottom:8px}
     .row{display:flex;gap:var(--gap);align-items:center;flex-wrap:wrap;margin:8px 0}
     .col{display:flex;flex-direction:column;gap:8px}
-    fieldset{border:1px solid #ddd;border-radius:10px;padding:12px}
+    fieldset{border:1px solid #ddd;border-radius:10px;padding:12px;margin-bottom:16px}
     label{font-weight:600}
-    select,input[type=file],input[type=text],button,textarea{padding:8px;font-size:14px}
+    select,input[type=file],input[type=text],button,textarea{padding:8px;font-size:14px;border:1px solid #ccc;border-radius:4px}
+    button{background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer}
+    button:hover{background:#0056b3}
+    input:focus,select:focus,textarea:focus{outline:2px solid #007bff}
     textarea{width:100%;min-height:180px;font-family:ui-monospace,Menlo,Consolas,monospace}
     .log{background:#f6f6f6;border:1px solid #eee;border-radius:10px;padding:8px;height:200px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace}
     .ok{color:#186a3b}.err{color:#922b21}.muted{color:#777}
