@@ -4,11 +4,6 @@
 const MOCK_DATA = [
   { name: "Ayşe Yılmaz",  title: "Yarışmacı", qr_payload: "ATT-1001" },
   { name: "Mehmet Demir", title: "T3 Vakfı", qr_payload: "ATT-1002" },
-  { name: "Elif Kaya",    title: "Konuk",     qr_payload: "ATT-1003" },
-  { name: "Ahmet Şen",    title: "Ziyaretçi", qr_payload: "ATT-1004" },
-  { name: "Cemre Ak",     title: "Ziyaretçi", qr_payload: "ATT-1005" },
-  { name: "Deniz Aslan",  title: "Konuk",     qr_payload: "ATT-1006" },
-  { name: "Zeynep Ulu",   title: "Görevli",   qr_payload: "ATT-1007" },
 ];
 
 let DATA_ROWS = []; // aktif veri kümesi
@@ -88,10 +83,11 @@ if(designArea){
 function makeDraggable(el){
   el.addEventListener('mousedown', e=>{
     e.preventDefault();
-    const rect = designArea.getBoundingClientRect();
-    const shiftX = e.clientX - el.offsetLeft;
-    const shiftY = e.clientY - el.offsetTop;
+    const startRect = designArea.getBoundingClientRect();
+    const shiftX = e.clientX - startRect.left - el.offsetLeft;
+    const shiftY = e.clientY - startRect.top - el.offsetTop;
     function onMove(ev){
+      const rect = designArea.getBoundingClientRect();
       let x = ev.clientX - rect.left - shiftX;
       let y = ev.clientY - rect.top - shiftY;
       x = Math.max(0, Math.min(x, designArea.clientWidth - el.offsetWidth));
