@@ -56,7 +56,24 @@ function renderPreview(rows){
 // ========================
 const SCALE = 2;
 const designArea = document.getElementById('designArea');
+const FIELDS = ['name','title','qr_payload'];
+const posInputs = {};
 if(designArea){
+  FIELDS.forEach(f=>{
+    posInputs[f] = {
+      x: document.getElementById(`pos-${f}-x`),
+      y: document.getElementById(`pos-${f}-y`)
+    };
+    ['x','y'].forEach(axis=>{
+      posInputs[f][axis].addEventListener('input', ()=>{
+        const val = parseInt(posInputs[f][axis].value)||0;
+        const el = designArea.querySelector(`.drag[data-field="${f}"]`);
+        if(axis==='x') el.style.left = (val / SCALE) + 'px';
+        else el.style.top = (val / SCALE) + 'px';
+        updateZplFromDesign();
+      });
+    });
+  });
   const defaults = { name:{x:20,y:20}, title:{x:20,y:70}, qr_payload:{x:20,y:120} };
   Object.keys(defaults).forEach(k=>{
     const el = designArea.querySelector(`.drag[data-field="${k}"]`);
@@ -114,6 +131,17 @@ function updateZplFromDesign(){
 ^FDQA,\${qr_payload}^FS
 ^XZ`;
   document.getElementById('zpl').value = zpl;
+  updateInputsFromDesign();
+}
+
+function updateInputsFromDesign(){
+  FIELDS.forEach(f=>{
+    const el = designArea.querySelector(`.drag[data-field="${f}"]`);
+    const x = Math.round((parseInt(el.style.left)||0)*SCALE);
+    const y = Math.round((parseInt(el.style.top)||0)*SCALE);
+    posInputs[f].x.value = x;
+    posInputs[f].y.value = y;
+  });
 }
 
 // ========================
