@@ -50,7 +50,7 @@
       <input id="csvFile" type="file" accept=".csv" />
     </div>
     <div class="row">
-      <span class="pill warn">Beklenen alanlar: <code>name, org, role, qr_payload</code></span>
+      <span class="pill warn">Beklenen alanlar: <code>name, title, qr_payload</code></span>
       <button id="btnLoadMock">Mock Veriyi Yükle</button>
       <button id="btnPreview">İlk 5 Satırı Önizle</button>
     </div>
@@ -67,7 +67,7 @@
 ^A0N,40,40
 ^FO20,20^FD${name}^FS
 ^A0N,28,28
-^FO20,70^FD${org} - ${role}^FS
+^FO20,70^FD${title}^FS
 ^FO20,120^BQ,2,10
 ^FDQA,${qr_payload}^FS
 ^XZ</textarea>

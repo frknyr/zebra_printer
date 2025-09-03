@@ -2,13 +2,13 @@
 //  MOCK VERİ ve YARDIMCILAR
 // ========================
 const MOCK_DATA = [
-  { name: "Ayşe Yılmaz", org: "T3", role: "Ziyaretçi", qr_payload: "ATT-1001" },
-  { name: "Mehmet Demir", org: "T3", role: "Görevli",   qr_payload: "ATT-1002" },
-  { name: "Elif Kaya",   org: "T3", role: "Konuk",     qr_payload: "ATT-1003" },
-  { name: "Ahmet Şen",   org: "T3", role: "Ziyaretçi", qr_payload: "ATT-1004" },
-  { name: "Cemre Ak",    org: "T3", role: "Ziyaretçi", qr_payload: "ATT-1005" },
-  { name: "Deniz Aslan", org: "T3", role: "Konuk",     qr_payload: "ATT-1006" },
-  { name: "Zeynep Ulu",  org: "T3", role: "Görevli",   qr_payload: "ATT-1007" },
+  { name: "Ayşe Yılmaz",  title: "Yarışmacı", qr_payload: "ATT-1001" },
+  { name: "Mehmet Demir", title: "T3 Vakfı", qr_payload: "ATT-1002" },
+  { name: "Elif Kaya",    title: "Konuk",     qr_payload: "ATT-1003" },
+  { name: "Ahmet Şen",    title: "Ziyaretçi", qr_payload: "ATT-1004" },
+  { name: "Cemre Ak",     title: "Ziyaretçi", qr_payload: "ATT-1005" },
+  { name: "Deniz Aslan",  title: "Konuk",     qr_payload: "ATT-1006" },
+  { name: "Zeynep Ulu",   title: "Görevli",   qr_payload: "ATT-1007" },
 ];
 
 let DATA_ROWS = []; // aktif veri kümesi
@@ -87,7 +87,7 @@ csvFile.addEventListener('change', async (e)=>{
   const f = e.target.files?.[0]; if(!f) return;
   const text = await f.text();
   const {header, data} = csvParse(text);
-  if(header.length===0){ alert('CSV başlık satırı bulunamadı. (name,org,role,qr_payload)'); return; }
+  if(header.length===0){ alert('CSV başlık satırı bulunamadı. (name,title,qr_payload)'); return; }
   DATA_ROWS = data;
   renderPreview(DATA_ROWS);
   log(`CSV yüklendi: ${DATA_ROWS.length} satır`, 'ok');
